@@ -155,6 +155,66 @@ public class touchpad extends ActionBarActivity {
         super.onPause();
     }
 
+    // Mouse actions.
+    protected class Action {
+        protected float downX, downY;
+        protected float oldX, oldY;
+        protected int pointerId;
+        protected long downTime;
+        protected boolean moving;
+
+        public boolean isClick(MotionEvent e) {
+            ViewConfiguration vc = ViewConfiguration.get(touchpad.getContext());
+
+            int index = e.findPointerIndex(pointerId);
+            return	Math.abs(e.getX(index) - downX) < vc.getScaledTouchSlop() &&
+                    Math.abs(e.getY(index) - downY) < vc.getScaledTouchSlop() &&
+                    e.getEventTime() - downTime < vc.getTapTimeout();
+        }
+
+        public boolean onDown(MotionEvent e) {
+            pointerId = e.getPointerId(0);
+            int index = e.findPointerIndex(pointerId);
+            oldX = downX = e.getX(index);
+            oldY = downY = e.getY(index);
+            downTime = e.getEventTime();
+            moving = false;
+            return true;
+        }
+        public boolean onUp(MotionEvent e) {
+            if (isClick(e))
+                onClick();
+            return true;
+        }
+
+        public boolean acceptMove(MotionEvent e) {
+            return true;
+        }
+
+        public boolean onMove(MotionEvent e) {
+            if(!acceptMove(e))
+                return false;
+
+            int index = e.findPointerIndex(pointerId);
+
+            float X = e.getX(index);
+            float Y = e.getY(index);
+            if(moving)
+                onMoveDelta((X - oldX) * Sensitivity, (Y - oldY) * Sensitivity);
+            else
+                moving = true;
+            oldX = X;
+            oldY = Y;
+            return true;
+        }
+        public boolean cancel(MotionEvent e) {
+            return false;
+        }
+
+        public void onMoveDelta(float dx, float dy) { }
+        public void onClick() { }
+    };
+
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         // Inflate the menu; this adds items to the action bar if it is present.
