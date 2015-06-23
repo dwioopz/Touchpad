@@ -98,7 +98,60 @@
             android:layout_width="wrap_content" android:layout_height="wrap_content"
             android:orientation="horizontal">
 
+            <!-- Media buttons -->
+            <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+                android:id="@+id/media"
+                android:contentDescription="@string/media_desc"
+                android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:orientation="horizontal">
 
+                <ImageButton
+                    android:id="@+id/stop"
+                    android:contentDescription="@string/mediastop_desc"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:padding="5dip"
+                    android:src="@drawable/media_stop"
+                    android:background="@null" />
+
+                <TextView
+                    android:id="@+id/line3"
+                    style="?android:attr/listSeparatorTextViewStyle"
+                    android:padding="5dip"
+                    android:gravity="center_horizontal"
+                    android:layout_width="1dp"
+                    android:layout_height="match_parent" />
+
+
+                <ImageButton
+                    android:id="@+id/playpause"
+                    android:contentDescription="@string/mediaplaypause_desc"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:padding="5dip"
+                    android:src="@drawable/media_playpause"
+                    android:background="@null" />
+
+
+                <TextView
+                    android:id="@+id/line4"
+                    style="?android:attr/listSeparatorTextViewStyle"
+                    android:padding="5dip"
+                    android:gravity="center_horizontal"
+                    android:layout_width="1dp"
+                    android:layout_height="match_parent" />
+
+                <ImageButton
+                    android:id="@+id/volumemute"
+                    android:contentDescription="@string/volumemute_desc"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:padding="5dip"
+                    android:src="@drawable/volume_mute"
+                    android:background="@null" />
+
+
+            </LinearLayout>
 
         </LinearLayout>
 
