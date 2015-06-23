@@ -59,6 +59,54 @@ public class touchpad extends ActionBarActivity {
         // Set touchpad events.
         touchpad = (ImageView) findViewById(R.id.touchpad);
         touchpad.setOnTouchListener(mTouchListener);
+
+        // Get button containers.
+        LinearLayout buttons = (LinearLayout) findViewById(R.id.buttons);
+
+        // Set keyboard events.
+        keyboard = (View) buttons.findViewById(R.id.keyboard);
+        keyboard.setOnClickListener(mKeyboardListener);
+        keyboard.setOnKeyListener(mKeyListener);
+
+        // Keyboard modifiers.
+        modifiers = (View) buttons.findViewById(R.id.modifiers);
+
+        // Set mouse button events.
+        mousebuttons = (LinearLayout) findViewById(R.id.mousebuttons);
+
+        button[0] = (ToggleButton) mousebuttons.findViewById(R.id.button0);
+        button[0].setOnCheckedChangeListener(mButton0ToggleListener);
+        button[0].setOnLongClickListener(mButton0ClickListener);
+
+        button[1] = (ToggleButton) mousebuttons.findViewById(R.id.button1);
+        button[1].setOnCheckedChangeListener(mButton1ToggleListener);
+        button[1].setOnLongClickListener(mButton1ClickListener);
+
+
+        // Set media button events.
+        media = (LinearLayout) findViewById(R.id.media);
+
+        View playpause = media.findViewById(R.id.playpause);
+        playpause.setOnClickListener(new OnClickListener() {
+            public void onClick(View v) { sendKeyPress((short) KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE, (short) 0); }
+        });
+
+        View stop = media.findViewById(R.id.stop);
+        stop.setOnClickListener(new OnClickListener() {
+            public void onClick(View v) { sendKeyPress((short) KeyEvent.KEYCODE_MEDIA_STOP, (short) 0); }
+        });
+
+        // Set browser button events.
+        browser = (LinearLayout) findViewById(R.id.browser);
+
+        // Set up preferences.
+        PreferenceManager.setDefaultValues(this, R.xml.preferences, false);
+
+        // If there is no server to reconnect, set the background to bad.
+        SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(this);
+        String to = preferences.getString("Server", null);
+        if (to == null)
+            touchpad.setImageResource(R.drawable.background_bad);
     }
 
 
