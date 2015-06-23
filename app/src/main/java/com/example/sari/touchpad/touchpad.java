@@ -109,6 +109,51 @@ public class touchpad extends ActionBarActivity {
             touchpad.setImageResource(R.drawable.background_bad);
     }
 
+    @Override
+    protected void onResume() {
+        super.onResume();
+
+        // Restore settings.
+        SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(this);
+
+        try { Port = (short) Integer.parseInt(preferences.getString("Port", Integer.toString(DefaultPort))); } catch(NumberFormatException ex) { Port = DefaultPort; }
+        Sensitivity = (float) preferences.getInt("Sensitivity", 50) / 25.0f + 0.1f;
+        try { MultitouchMode = Integer.parseInt(preferences.getString("MultitouchMode", "0")); } catch(NumberFormatException ex) { MultitouchMode = 0; }
+        Timeout = preferences.getInt("Timeout", 500) + 1;
+        EnableScrollBar = preferences.getBoolean("EnableScrollBar", preferences.getBoolean("EnableScroll", true));
+        ScrollBarWidth = preferences.getInt("ScrollBarWidth", 20);
+        EnableSystem = preferences.getBoolean("EnableSystem", true);
+
+        boolean EnableMouseButtons = preferences.getBoolean("EnableMouseButtons", false);
+        boolean EnableModifiers = preferences.getBoolean("EnableModifiers", false);
+        int Toolbar = 0;
+        try { Toolbar = Integer.parseInt(preferences.getString("Toolbar", "0")); } catch(NumberFormatException ex) { }
+
+        // Show/hide the mouse buttons.
+        if(EnableMouseButtons) mousebuttons.setVisibility(View.VISIBLE);
+        else mousebuttons.setVisibility(View.GONE);
+
+        // Show/hide the modifier keys.
+        if(EnableModifiers) modifiers.setVisibility(View.VISIBLE);
+        else modifiers.setVisibility(View.GONE);
+
+        // Show/hide media toolbar.
+        if(Toolbar == 1) media.setVisibility(View.VISIBLE);
+        else media.setVisibility(View.GONE);
+
+        // Show/hide browser toolbar.
+        if(Toolbar == 2) browser.setVisibility(View.VISIBLE);
+        else browser.setVisibility(View.GONE);
+
+        timer.postDelayed(mKeepAliveListener, KeepAlive);
+    }
+
+    @Override
+    protected void onPause() {
+        timer.removeCallbacks(mKeepAliveListener);
+        disconnect(true);
+        super.onPause();
+    }
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
