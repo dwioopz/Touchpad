@@ -55,6 +55,10 @@ public class touchpad extends ActionBarActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_touchpad);
+        
+        // Set touchpad events.
+        touchpad = (ImageView) findViewById(R.id.touchpad);
+        touchpad.setOnTouchListener(mTouchListener);
     }
 
 
