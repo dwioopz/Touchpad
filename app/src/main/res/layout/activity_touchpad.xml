@@ -71,4 +71,17 @@
 
         </LinearLayout>
         </LinearLayout>
+
+    <!-- Touchpad area -->
+    <ImageView
+        android:id="@+id/touchpad"
+        android:contentDescription="@string/touchpad_desc"
+        android:layout_width="match_parent"
+        android:layout_height="0dip"
+        android:layout_weight="1"
+        android:scaleType="centerInside"
+        android:src="@drawable/background"
+        android:focusable="true"
+        android:focusableInTouchMode="true" />
+
     </LinearLayout>
