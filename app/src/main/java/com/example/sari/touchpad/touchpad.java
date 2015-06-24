@@ -214,6 +214,42 @@ public class touchpad extends ActionBarActivity {
         public void onMoveDelta(float dx, float dy) { }
         public void onClick() { }
     };
+    protected class MoveAction extends Action {
+        public void onMoveDelta(float dx, float dy) { sendMove(dx, dy); }
+        public void onClick() {
+            if (button[0].isChecked())
+                button[0].toggle();
+            sendClick(0);
+        }
+
+        public boolean cancel(MotionEvent e) {
+            return true;
+        }
+    };
+    protected class ScrollAction extends Action {
+        protected long time;
+
+        public boolean onDown(MotionEvent e) {
+            time = e.getEventTime();
+            return super.onDown(e);
+        }
+
+        public boolean acceptMove(MotionEvent e) {
+            if(e.getEventTime() + 200 < time)
+                return false;
+            time = e.getEventTime();
+            return true;
+        }
+        public void onMoveDelta(float dx, float dy) { sendScroll(-2.0f * dy); }
+    };
+    protected class ScrollAction2 extends ScrollAction {
+        public void onMoveDelta(float dx, float dy) { sendScroll2(dx, -2.0f * dy); }
+        public void onClick() {
+            if (button[1].isChecked())
+                button[1].toggle();
+            sendClick(1);
+        }
+    };
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
