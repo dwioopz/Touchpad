@@ -270,6 +270,52 @@ public class touchpad extends ActionBarActivity {
         public void onClick() { sendClick(1); }
     }
 
+    // Mouse listeners.
+    OnTouchListener mTouchListener = new OnTouchListener() {
+        protected Action action = null;
+
+        public boolean onTouch(View v, MotionEvent e) {
+            switch(e.getAction() & MotionEvent.ACTION_MASK) {
+                case MotionEvent.ACTION_POINTER_DOWN:
+                    if(action != null)
+                        if(!action.cancel(e))
+                            return true;
+                case MotionEvent.ACTION_DOWN:
+                    action = null;
+                    // Jika berupa multitouch action, periksa mode multitouch.
+                    if(e.getPointerCount() >= 2) {
+                        switch(MultitouchMode) {
+                            case 1: action = new DragAction(); break;
+                            case 2: action = new ScrollAction2(); break;
+                        }
+                    }
+
+                    // Jika action masih null, periksa apakah berupa scroll action.
+                    if(action == null && EnableScrollBar && ((e.getEdgeFlags() & MotionEvent.EDGE_RIGHT) != 0 || e.getX() > v.getWidth() - ScrollBarWidth))
+                        action = new ScrollAction();
+
+                    // jika masih null, berarti berupa plain move action.
+                    if(action == null)
+                        action = new MoveAction();
+
+                    if(action != null)
+                        return action.onDown(e);
+                    return true;
+                case MotionEvent.ACTION_UP:
+                case MotionEvent.ACTION_POINTER_UP:
+                    if(action != null)
+                        action.onUp(e);
+                    action = null;
+                    return true;
+                case MotionEvent.ACTION_MOVE:
+                    if(action != null)
+                        return action.onMove(e);
+                    return true;
+                default:
+                    return false;
+            }
+        }
+    };
     
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
