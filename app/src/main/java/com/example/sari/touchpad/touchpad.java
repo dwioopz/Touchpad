@@ -250,7 +250,27 @@ public class touchpad extends ActionBarActivity {
             sendClick(1);
         }
     };
+    protected class DragAction extends Action {
+        protected boolean drag = false;
 
+        public boolean onMove(MotionEvent e) {
+            if (!drag && !isClick(e)) {
+                sendDown(0);
+                drag = true;
+            }
+            return super.onMove(e);
+        }
+        public boolean onUp(MotionEvent e) {
+            if(drag)
+                sendUp(0);
+            return super.onUp(e);
+        }
+
+        public void onMoveDelta(float dx, float dy) { sendMove(dx, dy); }
+        public void onClick() { sendClick(1); }
+    }
+
+    
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         // Inflate the menu; this adds items to the action bar if it is present.
