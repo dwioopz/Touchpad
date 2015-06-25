@@ -59,9 +59,218 @@ public class touchpad extends ActionBarActivity {
         // Set touchpad events.
         touchpad = (ImageView) findViewById(R.id.touchpad);
         touchpad.setOnTouchListener(mTouchListener);
+
+        // Get button containers.
+        LinearLayout buttons = (LinearLayout) findViewById(R.id.buttons);
+
+        // Set keyboard events.
+        keyboard = (View) buttons.findViewById(R.id.keyboard);
+        keyboard.setOnClickListener(mKeyboardListener);
+        keyboard.setOnKeyListener(mKeyListener);
+
+        // Keyboard modifiers.
+        modifiers = (View) buttons.findViewById(R.id.modifiers);
+
+        // Set mouse button events.
+        mousebuttons = (LinearLayout) findViewById(R.id.mousebuttons);
+
+        button[0] = (ToggleButton) mousebuttons.findViewById(R.id.button0);
+        button[0].setOnCheckedChangeListener(mButton0ToggleListener);
+        button[0].setOnLongClickListener(mButton0ClickListener);
+
+        button[1] = (ToggleButton) mousebuttons.findViewById(R.id.button1);
+        button[1].setOnCheckedChangeListener(mButton1ToggleListener);
+        button[1].setOnLongClickListener(mButton1ClickListener);
+
+
+        // Set media button events.
+        media = (LinearLayout) findViewById(R.id.media);
+
+        View playpause = media.findViewById(R.id.playpause);
+        playpause.setOnClickListener(new OnClickListener() {
+            public void onClick(View v) { sendKeyPress((short) KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE, (short) 0); }
+        });
+
+        View stop = media.findViewById(R.id.stop);
+        stop.setOnClickListener(new OnClickListener() {
+            public void onClick(View v) { sendKeyPress((short) KeyEvent.KEYCODE_MEDIA_STOP, (short) 0); }
+        });
+
+        // Set browser button events.
+        browser = (LinearLayout) findViewById(R.id.browser);
+
+        // Set up preferences.
+        PreferenceManager.setDefaultValues(this, R.xml.preferences, false);
+
+        // If there is no server to reconnect, set the background to bad.
+        SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(this);
+        String to = preferences.getString("Server", null);
+        if (to == null)
+            touchpad.setImageResource(R.drawable.background_bad);
     }
 
+    @Override
+    protected void onResume() {
+        super.onResume();
 
+        // Restore settings.
+        SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(this);
+
+        try { Port = (short) Integer.parseInt(preferences.getString("Port", Integer.toString(DefaultPort))); } catch(NumberFormatException ex) { Port = DefaultPort; }
+        Sensitivity = (float) preferences.getInt("Sensitivity", 50) / 25.0f + 0.1f;
+        try { MultitouchMode = Integer.parseInt(preferences.getString("MultitouchMode", "0")); } catch(NumberFormatException ex) { MultitouchMode = 0; }
+        Timeout = preferences.getInt("Timeout", 500) + 1;
+        EnableScrollBar = preferences.getBoolean("EnableScrollBar", preferences.getBoolean("EnableScroll", true));
+        ScrollBarWidth = preferences.getInt("ScrollBarWidth", 20);
+        EnableSystem = preferences.getBoolean("EnableSystem", true);
+
+        boolean EnableMouseButtons = preferences.getBoolean("EnableMouseButtons", false);
+        boolean EnableModifiers = preferences.getBoolean("EnableModifiers", false);
+        int Toolbar = 0;
+        try { Toolbar = Integer.parseInt(preferences.getString("Toolbar", "0")); } catch(NumberFormatException ex) { }
+
+        // Show/hide the mouse buttons.
+        if(EnableMouseButtons) mousebuttons.setVisibility(View.VISIBLE);
+        else mousebuttons.setVisibility(View.GONE);
+
+        // Show/hide the modifier keys.
+        if(EnableModifiers) modifiers.setVisibility(View.VISIBLE);
+        else modifiers.setVisibility(View.GONE);
+
+        // Show/hide media toolbar.
+        if(Toolbar == 1) media.setVisibility(View.VISIBLE);
+        else media.setVisibility(View.GONE);
+
+        // Show/hide browser toolbar.
+        if(Toolbar == 2) browser.setVisibility(View.VISIBLE);
+        else browser.setVisibility(View.GONE);
+
+        timer.postDelayed(mKeepAliveListener, KeepAlive);
+    }
+
+    @Override
+    protected void onPause() {
+        timer.removeCallbacks(mKeepAliveListener);
+        disconnect(true);
+        super.onPause();
+    }
+
+    // Mouse actions.
+    protected class Action {
+        protected float downX, downY;
+        protected float oldX, oldY;
+        protected int pointerId;
+        protected long downTime;
+        protected boolean moving;
+
+        public boolean isClick(MotionEvent e) {
+            ViewConfiguration vc = ViewConfiguration.get(touchpad.getContext());
+
+            int index = e.findPointerIndex(pointerId);
+            return	Math.abs(e.getX(index) - downX) < vc.getScaledTouchSlop() &&
+                    Math.abs(e.getY(index) - downY) < vc.getScaledTouchSlop() &&
+                    e.getEventTime() - downTime < vc.getTapTimeout();
+        }
+
+        public boolean onDown(MotionEvent e) {
+            pointerId = e.getPointerId(0);
+            int index = e.findPointerIndex(pointerId);
+            oldX = downX = e.getX(index);
+            oldY = downY = e.getY(index);
+            downTime = e.getEventTime();
+            moving = false;
+            return true;
+        }
+        public boolean onUp(MotionEvent e) {
+            if (isClick(e))
+                onClick();
+            return true;
+        }
+
+        public boolean acceptMove(MotionEvent e) {
+            return true;
+        }
+
+        public boolean onMove(MotionEvent e) {
+            if(!acceptMove(e))
+                return false;
+
+            int index = e.findPointerIndex(pointerId);
+
+            float X = e.getX(index);
+            float Y = e.getY(index);
+            if(moving)
+                onMoveDelta((X - oldX) * Sensitivity, (Y - oldY) * Sensitivity);
+            else
+                moving = true;
+            oldX = X;
+            oldY = Y;
+            return true;
+        }
+        public boolean cancel(MotionEvent e) {
+            return false;
+        }
+
+        public void onMoveDelta(float dx, float dy) { }
+        public void onClick() { }
+    };
+    protected class MoveAction extends Action {
+        public void onMoveDelta(float dx, float dy) { sendMove(dx, dy); }
+        public void onClick() {
+            if (button[0].isChecked())
+                button[0].toggle();
+            sendClick(0);
+        }
+
+        public boolean cancel(MotionEvent e) {
+            return true;
+        }
+    };
+    protected class ScrollAction extends Action {
+        protected long time;
+
+        public boolean onDown(MotionEvent e) {
+            time = e.getEventTime();
+            return super.onDown(e);
+        }
+
+        public boolean acceptMove(MotionEvent e) {
+            if(e.getEventTime() + 200 < time)
+                return false;
+            time = e.getEventTime();
+            return true;
+        }
+        public void onMoveDelta(float dx, float dy) { sendScroll(-2.0f * dy); }
+    };
+    protected class ScrollAction2 extends ScrollAction {
+        public void onMoveDelta(float dx, float dy) { sendScroll2(dx, -2.0f * dy); }
+        public void onClick() {
+            if (button[1].isChecked())
+                button[1].toggle();
+            sendClick(1);
+        }
+    };
+    protected class DragAction extends Action {
+        protected boolean drag = false;
+
+        public boolean onMove(MotionEvent e) {
+            if (!drag && !isClick(e)) {
+                sendDown(0);
+                drag = true;
+            }
+            return super.onMove(e);
+        }
+        public boolean onUp(MotionEvent e) {
+            if(drag)
+                sendUp(0);
+            return super.onUp(e);
+        }
+
+        public void onMoveDelta(float dx, float dy) { sendMove(dx, dy); }
+        public void onClick() { sendClick(1); }
+    }
+
+    
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         // Inflate the menu; this adds items to the action bar if it is present.
