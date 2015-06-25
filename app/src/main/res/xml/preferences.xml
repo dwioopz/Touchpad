@@ -29,46 +29,6 @@
             android:title="@string/enablemousebuttons"
             android:summary="@string/enablemousebuttons_summary" />
 
-        <CheckBoxPreference
-            android:key="EnableModifiers"
-            android:defaultValue="false"
-            android:persistent="true"
-            android:title="@string/enablemodifiers"
-            android:summary="@string/enablemodifiers_summary" />
-
-        <CheckBoxPreference
-            android:key="EnableScrollBar"
-            android:defaultValue="true"
-            android:persistent="true"
-            android:title="@string/enablescrollbar"
-            android:summary="@string/enablescrollbar_summary" />
-
-        <com.thingsstuff.touchpad.SeekBarPreference
-            android:key="ScrollBarWidth"
-            android:defaultValue="20"
-            android:max="200"
-            android:persistent="true"
-            android:title="@string/scrollbarwidth"
-            android:summary="@string/scrollbarwidth_summary"
-            android:text=" pixels"
-            android:dialogTitle="@string/scrollbarwidth" />
-
-        <CheckBoxPreference
-            android:key="EnableSystem"
-            android:defaultValue="true"
-            android:persistent="true"
-            android:title="@string/enablesystem"
-            android:summary="@string/enablesystem_summary" />
-
-        <ListPreference
-            android:key="Toolbar"
-            android:entries="@array/toolbar_options"
-            android:entryValues="@array/toolbar_values"
-            android:defaultValue="0"
-            android:persistent="true"
-            android:title="@string/toolbar"
-            android:summary="@string/toolbar_summary"
-            android:dialogTitle="@string/toolbar" />
 
     </PreferenceCategory>
 
