@@ -180,4 +180,94 @@ namespace ts
 		s = other.s;
 		other.s = INVALID_SOCKET;
 	}
+
+	// UdpSocket
+	void UdpSocket::Bind(Address addr, bool blocking)
+	{
+		assert(s == INVALID_SOCKET);
+			
+		try
+		{
+			s = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
+			if(s == INVALID_SOCKET)
+				throw socket_exception("UdpSocket::Bind");
+			if(bind(s, addr.RefSockAddr(), addr.Size()) == SOCKET_ERROR)
+				throw socket_exception("UdpSocket::Bind");
+
+			if(!blocking)
+				SetBlocking(false);
+		}
+		catch(...)
+		{
+			Close();
+			throw;
+		}
+	}
+
+	int UdpSocket::ReceiveFrom(void * buffer, int size, Address & from, int timeout)
+	{
+		if(timeout > 0)
+		{
+			fd_set set;
+			FD_ZERO(&set);
+			FD_SET(s, &set);
+			timeval t = { 0, timeout * 1000 };
+			select(1, &set, NULL, NULL, &t);
+		}		
+
+		int result = recvfrom(s, (char *)buffer, size, 0, from.RefSockAddr(), from.RefSize());
+		if(result == SOCKET_ERROR)
+		{
+			ThrowSocketException("UdpSocket::ReceiveFrom");
+			return 0;
+		}
+		return result;
+	}
+
+	int UdpSocket::SendTo(void * buffer, int size, const Address & to, int timeout)
+	{
+		if(timeout > 0)
+		{
+			fd_set set;
+			FD_ZERO(&set);
+			FD_SET(s, &set);
+			timeval t = { 0, timeout * 1000 };
+			select(1, NULL, &set, NULL, &t);
+		}		
+
+		int result = sendto(s, (char *)buffer, size, 0, to.RefSockAddr(), to.Size());
+		if(result == SOCKET_ERROR)
+			throw socket_exception("UdpSOcket::SendTo");
+		return result;
+	}
+
+	// Get address
+	template < int N >
+	void AddressToString(wchar_t (&buffer)[N], const Address & addr, bool port)
+	{
+		DWORD length = N;
+		if(WSAAddressToString(const_cast < sockaddr * > (addr.RefSockAddr()), addr.Size(), NULL, buffer, &length) != NO_ERROR)
+		{
+			wcscpy_s(buffer, L"<error>");
+			return;
+		}
+		else
+		{
+			if(!port)
+			{
+				wchar_t * colon = wcschr(buffer, ':');
+				if(colon)
+					*colon = 0;
+			}
+		}
+	}
+
+	bool ThrowSocketException(const char * fn, int err)
+	{
+		if(err == NO_ERROR)
+			return true;
+		if(err == WSAEWOULDBLOCK)
+			return false;
+		throw socket_exception(fn, err);
+	}
 }
