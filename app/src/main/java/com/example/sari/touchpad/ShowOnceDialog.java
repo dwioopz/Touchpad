@@ -6,7 +6,7 @@ import android.content.Context;
 /**
  * on 6/26/2015.
  */
-public class ShowOnceDialog {
+
     public class ShowOnceDialog extends AlertDialog {
 
         public ShowOnceDialog(Context context) {
@@ -26,5 +26,5 @@ public class ShowOnceDialog {
             // TODO Auto-generated constructor stub
         }
     }
-}
+
 
