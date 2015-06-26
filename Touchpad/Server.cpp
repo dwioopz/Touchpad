@@ -55,3 +55,90 @@ bool Server::Run(short port, int password)
 		return false;
 	}
 }
+
+// Mouse input helpers.
+INPUT MouseMove(int dx, int dy)
+{
+	INPUT in = { 0 };
+	in.type = INPUT_MOUSE;
+	in.mi.dx = dx;
+	in.mi.dy = dy;
+	in.mi.dwFlags = MOUSEEVENTF_MOVE;
+	return in;
+}
+INPUT MouseButtonDown(int button)
+{
+	INPUT in = { 0 };
+	in.type = INPUT_MOUSE;
+	switch(button)
+	{
+	case 0: in.mi.dwFlags = MOUSEEVENTF_LEFTDOWN; break;
+	case 1:
+	case 2: in.mi.dwFlags = MOUSEEVENTF_RIGHTDOWN; break;
+	}
+	return in;
+}
+INPUT MouseButtonUp(int button)
+{
+	INPUT in = { 0 };
+	in.type = INPUT_MOUSE;
+	switch(button)
+	{
+	case 0: in.mi.dwFlags = MOUSEEVENTF_LEFTUP; break;
+	case 1:
+	case 2: in.mi.dwFlags = MOUSEEVENTF_RIGHTUP; break;
+	}
+	return in;
+}
+INPUT MouseWheel(int delta)
+{
+	INPUT in = { 0 };
+	in.type = INPUT_MOUSE;
+	in.mi.dwFlags = MOUSEEVENTF_WHEEL;
+	in.mi.mouseData = delta;
+	return in;
+}
+INPUT MouseHWheel(int delta)
+{
+	INPUT in = { 0 };
+	in.type = INPUT_MOUSE;
+	in.mi.dwFlags = MOUSEEVENTF_HWHEEL;
+	in.mi.mouseData = delta;
+	return in;
+}
+
+// Key input helpers.
+INPUT KeyDown(WORD vk)
+{
+	INPUT in = { 0 };
+	in.type = INPUT_KEYBOARD;
+	in.ki.wVk = vk;
+	in.ki.dwFlags = 0;
+	return in;
+}
+INPUT KeyUp(WORD vk)
+{
+	INPUT in = { 0 };
+	in.type = INPUT_KEYBOARD;
+	in.ki.wVk = vk;
+	in.ki.dwFlags = KEYEVENTF_KEYUP;
+	return in;
+}
+INPUT CharDown(WORD ch)
+{
+	INPUT in = { 0 };
+	in.type = INPUT_KEYBOARD;
+	in.ki.wScan = ch;
+	in.ki.dwFlags = KEYEVENTF_UNICODE;
+	return in;
+}
+INPUT CharUp(WORD ch)
+{
+	INPUT in = { 0 };
+	in.type = INPUT_KEYBOARD;
+	in.ki.wScan = ch;
+	in.ki.dwFlags = KEYEVENTF_UNICODE | KEYEVENTF_KEYUP;
+	return in;
+}
+
+
