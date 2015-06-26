@@ -122,3 +122,30 @@ bool SavePreferences(HWND hWnd)
 
 	return true;
 }
+
+// Show log and resize window based on check box.
+void ShowLog(HWND hWnd)
+{
+	bool show = IsDlgButtonChecked(hWnd, IDC_SHOWLOG) == BST_CHECKED;
+	ShowWindow(LogWnd, show ? SW_SHOW : SW_HIDE);
+
+	RECT rcLog;
+	GetWindowRect(LogWnd, &rcLog);
+	ScreenToClient(hWnd, (POINT *)&rcLog + 0);
+	ScreenToClient(hWnd, (POINT *)&rcLog + 1);
+
+	RECT rcWnd, rcClient;
+	GetWindowRect(hWnd, &rcWnd);
+
+	GetClientRect(hWnd, &rcClient);
+	ClientToScreen(hWnd, (POINT *)&rcClient + 0);
+	ClientToScreen(hWnd, (POINT *)&rcClient + 1);
+
+	MoveWindow(
+		hWnd, 
+		rcWnd.left, 
+		rcWnd.top, 
+		rcWnd.right - rcWnd.left, 
+		(show ? rcLog.bottom + 12 : rcLog.top) + rcClient.top - rcWnd.top,
+		TRUE);
+}
