@@ -1,9 +1,53 @@
 package com.example.sari.touchpad;
 
-import android.support.v7.app.ActionBarActivity;
+import java.io.IOException;
+import java.net.DatagramPacket;
+import java.net.DatagramSocket;
+import java.net.InetAddress;
+import java.net.InetSocketAddress;
+import java.net.Socket;
+import java.net.SocketException;
+import java.net.SocketTimeoutException;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
+
+import com.thingsstuff.touchpad.R;
+
+import android.app.Activity;
+import android.app.AlertDialog;
+import android.content.Context;
+import android.content.DialogInterface;
+import android.content.Intent;
+import android.content.SharedPreferences;
+import android.net.DhcpInfo;
+import android.net.wifi.WifiManager;
 import android.os.Bundle;
+import android.os.Handler;
+import android.preference.PreferenceManager;
+import android.text.InputType;
+import android.text.method.PasswordTransformationMethod;
+import android.util.Log;
+import android.view.ContextMenu;
+import android.view.ContextMenu.ContextMenuInfo;
+import android.view.KeyEvent;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.MotionEvent;
+import android.view.SubMenu;
+import android.view.View;
+import android.view.View.OnClickListener;
+import android.view.View.OnKeyListener;
+import android.view.View.OnLongClickListener;
+import android.view.View.OnTouchListener;
+import android.view.ViewConfiguration;
+import android.view.inputmethod.InputMethodManager;
+import android.widget.CheckBox;
+import android.widget.CompoundButton;
+import android.widget.CompoundButton.OnCheckedChangeListener;
+import android.widget.EditText;
+import android.widget.ImageView;
+import android.widget.LinearLayout;
+import android.widget.ToggleButton;
 
 
 public class touchpad extends ActionBarActivity {
@@ -48,7 +92,7 @@ public class touchpad extends ActionBarActivity {
     protected ToggleButton[] button = { null, null };
     protected ToggleButton key_shift, key_ctrl, key_alt;
 
-    public Touchpad() {
+    public touchpad() {
     }
 
     @Override
