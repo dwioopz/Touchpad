@@ -62,6 +62,9 @@
         <item>2</item>
     </string-array>
 
+    <string name="enablemousebuttons">Enable Mouse Buttons</string>
+    <string name="enablemousebuttons_summary">Show the left and right mouse toggle buttons.</string>
+
     <string name="enablesystem">Enable System Buttons</string>
     <string name="enablesystem_summary">Allow Touchpad to use the hardware buttons to control your computer.</string>
 
