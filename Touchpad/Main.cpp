@@ -277,3 +277,100 @@ BOOL CALLBACK DialogProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 	}
 	return FALSE;
 }
+
+// Entry point.
+int CALLBACK WinMain(HINSTANCE, HINSTANCE, LPSTR lpCmdLine, int)
+{	
+	InitSockets();
+
+	HWND hWnd = CreateDialog(NULL, MAKEINTRESOURCE(IDD_DIALOG), NULL, DialogProc);
+	
+	MSG msg;
+	while(GetMessage(&msg, NULL, 0, 0))
+	{
+		// Handle window messages.
+		if(!IsDialogMessage(hWnd, &msg))
+		{
+			TranslateMessage(&msg);
+			DispatchMessage(&msg);
+		}
+	}
+
+	CloseSockets();
+	return 0;
+}
+
+// Log a message.
+void Log(int level, const wchar_t * s, ...)
+{
+	// Get status and level.
+	bool notify = (level & OL_NOTIFY) != 0;
+	bool status = (level & OL_STATUS) != 0;
+	level &= 0x0FFFFFFF;
+
+	int nSize = 0;
+	wchar_t buffer[1024] = { 0 };
+	va_list args;
+	va_start(args, s);
+	nSize = _vsnwprintf_s(buffer, sizeof(buffer) / sizeof(buffer[0]) - 1, s, args);
+	va_end(args);
+
+	// Status goes to tooltip and status window.
+	if(status)
+	{
+		// Set tooltip.
+		Notify.uFlags = NIF_TIP;
+		Notify.szTip[0] = 0;
+		wcscpy_s(Notify.szTip, buffer);
+		Shell_NotifyIcon(NIM_MODIFY, &Notify);
+
+		// Set status window.
+		SetWindowText(StatusWnd, buffer);
+	}
+	
+	// Show notification balloon if notify.
+	if(notify)
+	{
+		Notify.uFlags = NIF_INFO;
+		switch(level)
+		{
+		case OL_INFO:		Notify.dwInfoFlags = NIIF_INFO; break;
+		case OL_ERROR:		Notify.dwInfoFlags = NIIF_ERROR; break;
+		case OL_WARNING:	Notify.dwInfoFlags = NIIF_WARNING; break;
+		}
+		wcscpy_s(Notify.szInfoTitle, L"Touchpad Server");
+		wcscpy_s(Notify.szInfo, buffer);
+
+		Shell_NotifyIcon(NIM_MODIFY, &Notify);
+	}
+
+	if(level > OutputLevel)
+		return;
+
+	int length = GetWindowTextLength(LogWnd) + sizeof(buffer) / sizeof(buffer[0]) + 16;
+	wchar_t * text = new wchar_t[length];
+	GetWindowText(LogWnd, text, length);
+	switch(level)
+	{
+	case OL_ERROR:		wcscat_s(text, length, L"ERROR: "); break;
+	case OL_WARNING:	wcscat_s(text, length, L"WARNING: "); break;
+	case OL_VERBOSE:	wcscat_s(text, length, L"VERBOSE: "); break;
+	}
+	wcscat_s(text, length, buffer);
+	SetWindowText(LogWnd, text);
+	SendMessage(LogWnd, EM_LINESCROLL, 0, 1000000);
+
+	InvalidateRect(LogWnd, NULL, FALSE);
+
+	delete [] text;
+}
+
+int Hash(const wchar_t * str)
+{
+	int hash = 5381;
+	int c;
+	while(c = *str++)
+		hash = hash * 33 + c;
+
+	return hash;
+}
