@@ -81,6 +81,12 @@
     <Image Include="bad.ico" />
     <Image Include="icon.ico" />
   </ItemGroup>
+  <ItemGroup>
+    <None Include="resource.h.gch" />
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="Server.rc" />
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>
