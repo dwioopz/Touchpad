@@ -149,3 +149,131 @@ void ShowLog(HWND hWnd)
 		(show ? rcLog.bottom + 12 : rcLog.top) + rcClient.top - rcWnd.top,
 		TRUE);
 }
+
+// Notify message handler.
+BOOL NotifyProc(HWND hWnd, WPARAM wParam, LPARAM lParam)
+{
+	// Message from the notification icon.
+	switch(LOWORD(lParam))
+	{
+	case NIN_BALLOONUSERCLICK:
+		ShowWindow(hWnd, SW_SHOW);
+	case NIN_BALLOONHIDE:
+	case NIN_BALLOONTIMEOUT:
+		Notify.uFlags = NIF_INFO;
+		Notify.dwInfoFlags = 0;
+		wcscpy_s(Notify.szInfoTitle, L"");
+		wcscpy_s(Notify.szInfo, L"");
+
+		Shell_NotifyIcon(NIM_MODIFY, &Notify);
+		return TRUE;
+		
+	case WM_LBUTTONDBLCLK:
+		ShowWindow(hWnd, SW_SHOW);
+		SetForegroundWindow(hWnd);
+		return TRUE;
+	case WM_RBUTTONDOWN:
+	case WM_CONTEXTMENU:
+		// Show context menu at icon.
+		POINT pt;
+		GetCursorPos(&pt);
+
+		HMENU menu = LoadMenu(NULL, MAKEINTRESOURCE(IDR_MENU));
+		HMENU context = GetSubMenu(menu, 0);
+		TrackPopupMenu(context, 0, pt.x, pt.y, 0, hWnd, NULL);
+		DestroyMenu(menu);
+
+		Shell_NotifyIcon(NIM_SETFOCUS, &Notify);
+		return TRUE;
+	}
+	return FALSE;
+}
+
+// Dialog message handler.
+BOOL CALLBACK DialogProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
+{
+	switch(msg)
+	{
+	case WM_INITDIALOG:	
+		// Get the log control.
+		LogWnd = GetDlgItem(hWnd, IDC_LOG);
+		StatusWnd = GetDlgItem(hWnd, IDC_STATUS);
+		
+		// Add icon to notification area.
+		memset(&Notify, 0, sizeof(Notify));
+		Notify.cbSize = sizeof(Notify);
+		Notify.hWnd = hWnd;
+		Notify.uID = 1;
+		Notify.uFlags = NIF_ICON | NIF_MESSAGE;
+		Notify.uCallbackMessage = WM_APP;
+		Notify.uVersion = NOTIFYICON_VERSION_4;
+		Notify.hIcon = (HICON)LoadImage(
+			GetModuleHandle(NULL), 
+			MAKEINTRESOURCE(IDI_ICON),
+			IMAGE_ICON, 
+			GetSystemMetrics(SM_CXSMICON), 
+			GetSystemMetrics(SM_CYSMICON), 
+			0);
+		Shell_NotifyIcon(NIM_ADD, &Notify);
+		
+		SendMessage(hWnd, WM_SETICON, ICON_SMALL, (LPARAM)Notify.hIcon);
+		SendMessage(hWnd, WM_SETICON, ICON_BIG, (LPARAM)LoadImage(
+			GetModuleHandle(NULL), 
+			MAKEINTRESOURCE(IDI_ICON),
+			IMAGE_ICON, 
+			GetSystemMetrics(SM_CXICON), 
+			GetSystemMetrics(SM_CYICON), 
+			0));
+
+		LoadPreferences(hWnd);
+		server.Run(Port, Password);
+		return TRUE;
+
+	case WM_SHOWWINDOW:
+		if(wParam)
+		{
+			ShowLog(hWnd);
+			LoadPreferences(hWnd);
+		}
+		return TRUE;
+
+	case WM_APP:
+		return NotifyProc(hWnd, wParam, lParam);
+
+	case WM_COMMAND:
+		switch(LOWORD(wParam))
+		{
+		case IDC_SHOWLOG:
+			ShowLog(hWnd);
+			return TRUE;
+		case IDOK:
+			if(!SavePreferences(hWnd))
+				return TRUE;
+		case IDCANCEL:
+			ShowWindow(hWnd, SW_HIDE);
+			return TRUE;
+		case ID_CONTEXT_EXIT:
+			DestroyWindow(hWnd);
+			return TRUE;
+		case ID_CONTEXT_RESTARTSERVER:
+			LoadPreferences(hWnd);
+			server.Run(Port, Password);
+			return TRUE;
+		case ID_CONTEXT_SETTINGS:
+			ShowWindow(hWnd, SW_SHOW);
+			SetForegroundWindow(hWnd);
+			return TRUE;
+		}
+		return FALSE;
+
+	case WM_CLOSE:
+		ShowWindow(hWnd, SW_HIDE);
+		return TRUE;
+
+	case WM_DESTROY:
+		Shell_NotifyIcon(NIM_DELETE, &Notify);
+		PostQuitMessage(0);
+		return TRUE;
+	}
+	return FALSE;
+}
