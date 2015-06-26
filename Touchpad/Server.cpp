@@ -269,4 +269,76 @@ void Server::AcceptClients()
 	}
 }
 
+void Server::CheckBeacon(int i)
+{
+	Address from;
+	Packet p;
+	while(beacons[i].ReceiveFrom(&p, sizeof(p), from) == sizeof(p))
+	{
+		if(p.Control == C_PING)
+		{
+			// Reply with port the server is running on.
+			p.Control = C_ACK;
+			p.Port = htons(port);
+			beacons[i].SendTo(&p, sizeof(p), from);
+
+			std::wstring name = from.ToString(false);
+			Log(OL_INFO, L"Responded to broadcast from %s\r\n", name.c_str());
+		}
+	}
+}
+
+void Server::Main(const volatile bool & run)
+{
+	while(run)
+	{
+		// Respond to client.
+		if(client.IsValid())
+		{
+			try
+			{
+				HandlePackets();
+			}
+			catch(socket_exception & ex)
+			{
+				Log(OL_ERROR, L"%S", ex.what());
+				client.Close();
+			}
+		}
+		else
+		{
+			Sleep(10);
+		}
+
+		// Maybe accept client.
+		if(server.IsValid())
+		{
+			try
+			{
+				AcceptClients();
+			}
+			catch(socket_exception & ex)
+			{
+				Log(OL_ERROR, L"%S", ex.what());
+			}
+		}
+
+		// Check for broadcasts looking for the server.
+		for(int i = 0; i < 2; ++i)
+		{
+			if(beacons[i].IsValid())
+			{
+				try
+				{
+					CheckBeacon(i);
+				}
+				catch(socket_exception & ex)
+				{
+					Log(OL_ERROR, L"%S", ex.what());
+				}
+			}
+		}
+	}
+}
+
 
