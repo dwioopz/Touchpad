@@ -11,7 +11,7 @@ import java.net.SocketTimeoutException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 
-import com.thingsstuff.touchpad.R;
+import com.example.sari.touchpad.R;
 
 import android.app.Activity;
 import android.app.AlertDialog;
@@ -24,6 +24,7 @@ import android.net.wifi.WifiManager;
 import android.os.Bundle;
 import android.os.Handler;
 import android.preference.PreferenceManager;
+import android.support.v7.app.ActionBarActivity;
 import android.text.InputType;
 import android.text.method.PasswordTransformationMethod;
 import android.util.Log;
@@ -77,9 +78,7 @@ public class touchpad extends ActionBarActivity {
     protected float Sensitivity;
     protected int MultitouchMode;
     protected int Timeout;
-    protected boolean EnableScrollBar;
-    protected int ScrollBarWidth;
-    protected boolean EnableSystem;
+
 
     // State.
     protected Handler timer = new Handler();
@@ -87,11 +86,11 @@ public class touchpad extends ActionBarActivity {
     protected ImageView touchpad;
     protected View mousebuttons;
     protected View keyboard, modifiers;
-    protected View media, browser;
+
     protected ToggleButton[] button = {null, null};
     protected ToggleButton key_shift, key_ctrl, key_alt;
 
-    public Touchpad() {
+    public touchpad() {
     }
 
     @Override
@@ -111,9 +110,6 @@ public class touchpad extends ActionBarActivity {
         keyboard.setOnClickListener(mKeyboardListener);
         keyboard.setOnKeyListener(mKeyListener);
 
-        // Keyboard modifiers.
-        modifiers = (View) buttons.findViewById(R.id.modifiers);
-
         // Set mouse button events.
         mousebuttons = (LinearLayout) findViewById(R.id.mousebuttons);
 
@@ -124,27 +120,6 @@ public class touchpad extends ActionBarActivity {
         button[1] = (ToggleButton) mousebuttons.findViewById(R.id.button1);
         button[1].setOnCheckedChangeListener(mButton1ToggleListener);
         button[1].setOnLongClickListener(mButton1ClickListener);
-
-
-        // Set media button events.
-        media = (LinearLayout) findViewById(R.id.media);
-
-        View playpause = media.findViewById(R.id.playpause);
-        playpause.setOnClickListener(new OnClickListener() {
-            public void onClick(View v) {
-                sendKeyPress((short) KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE, (short) 0);
-            }
-        });
-
-        View stop = media.findViewById(R.id.stop);
-        stop.setOnClickListener(new OnClickListener() {
-            public void onClick(View v) {
-                sendKeyPress((short) KeyEvent.KEYCODE_MEDIA_STOP, (short) 0);
-            }
-        });
-
-        // Set browser button events.
-        browser = (LinearLayout) findViewById(R.id.browser);
 
         // Set up preferences.
         PreferenceManager.setDefaultValues(this, R.xml.preferences, false);
@@ -175,8 +150,7 @@ public class touchpad extends ActionBarActivity {
             MultitouchMode = 0;
         }
         Timeout = preferences.getInt("Timeout", 500) + 1;
-        EnableScrollBar = preferences.getBoolean("EnableScrollBar", preferences.getBoolean("EnableScroll", true));
-        ScrollBarWidth = preferences.getInt("ScrollBarWidth", 20);
+
         EnableSystem = preferences.getBoolean("EnableSystem", true);
 
         boolean EnableMouseButtons = preferences.getBoolean("EnableMouseButtons", false);
@@ -1009,13 +983,6 @@ public class touchpad extends ActionBarActivity {
     }
 
     @Override
-    public boolean onCreateOptionsMenu(Menu menu) {
-        // Inflate the menu; this adds items to the action bar if it is present.
-        getMenuInflater().inflate(R.menu.menu_touchpad, menu);
-        return true;
-    }
-
-    @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         switch (item.getItemId()) {
             case CONNECT_ID:
@@ -1044,7 +1011,7 @@ public class touchpad extends ActionBarActivity {
                 }
                 return true;
             case PREFERENCES_ID:
-                startActivity(new Intent(this, Preferences.class));
+                startActivity(new Intent(this, preferences.class));
                 return true;
             case EXIT_ID:
                 super.onBackPressed();
