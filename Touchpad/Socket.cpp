@@ -57,5 +57,127 @@ namespace ts
 		return addr;
 	}
 
+	// Socket
+	void Socket::IoCtlSocket(long cmd, u_long & mode)
+	{
+		int err = ioctlsocket(s, cmd, &mode);
+		if(err != NO_ERROR)
+			throw socket_exception("Socket::IoCtlSocket", err);
+	}
 
+	void Socket::SetBlocking(bool blocking)
+	{
+		u_long mode;
+		if(blocking) mode = 0;
+		else mode = 1;
+		IoCtlSocket(FIONBIO, mode);
+	}
+	
+	void Socket::Close()
+	{ 
+		closesocket(s); 
+		s = INVALID_SOCKET; 
+	}
+
+	// TcpSocket
+	void TcpSocket::Listen(const Address & addr, int queue, bool blocking)
+	{
+		assert(!IsValid());
+
+		try
+		{
+			s = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+			if(s == INVALID_SOCKET)
+				throw socket_exception("TcpSocket::Listen");
+			if(bind(s, addr.RefSockAddr(), addr.Size()) == SOCKET_ERROR)
+				throw socket_exception("TcpSocket::Listen");
+		
+			if(!blocking)
+				SetBlocking(false);
+
+			int err = listen(s, queue);
+			if(err == SOCKET_ERROR)
+				throw socket_exception("TcpSocket::Listen");
+		}
+		catch(...)
+		{
+			Close();
+			throw;
+		}
+	}
+
+	bool TcpSocket::Accept(TcpSocket & l, Address & addr, bool blocking)
+	{
+		assert(!IsValid());
+
+		try
+		{
+			s = accept(l.s, addr.RefSockAddr(), addr.RefSize());
+			if(s == INVALID_SOCKET)
+				return ThrowSocketException("TcpSocket::Accept");
+
+			if(!blocking)
+				SetBlocking(false);
+
+			return true;
+		}
+		catch(...)
+		{
+			Close();
+			throw;
+		}
+	}
+	
+	int TcpSocket::Receive(void * buffer, int size, int timeout)
+	{
+		if(timeout > 0)
+		{
+			fd_set set;
+			FD_ZERO(&set);
+			FD_SET(s, &set);
+			timeval t = { 0, timeout * 1000 };
+			select(1, &set, NULL, NULL, &t);
+		}		
+
+		int result = recv(s, (char *)buffer, size, 0);
+		if(result == SOCKET_ERROR)
+		{
+			ThrowSocketException("TcpSocket::Receive");
+			return 0;
+		}
+		return result;
+	}
+	int TcpSocket::Send(void * buffer, int size, int timeout)
+	{
+		if(timeout > 0)
+		{
+			fd_set set;
+			FD_ZERO(&set);
+			FD_SET(s, &set);
+			timeval t = { 0, timeout * 1000 };
+			select(1, NULL, &set, NULL, &t);
+		}		
+
+		int result = send(s, (char *)buffer, size, 0);
+		if(result == SOCKET_ERROR)
+			throw socket_exception("TcpSocket::Send");
+		return result;
+	}
+
+	Address TcpSocket::GetPeer()
+	{
+		Address addr;
+		int err = getpeername(s, addr.RefSockAddr(), addr.RefSize());
+		if(err == SOCKET_ERROR)
+			throw socket_exception("TcpSocket::GetPeer");
+		return addr;
+	}
+
+	void TcpSocket::Take(TcpSocket & other)
+	{
+		assert(!IsValid());
+
+		s = other.s;
+		other.s = INVALID_SOCKET;
+	}
 }
