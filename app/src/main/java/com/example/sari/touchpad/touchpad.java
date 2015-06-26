@@ -1,46 +1,9 @@
 package com.example.sari.touchpad;
 
 import android.support.v7.app.ActionBarActivity;
-import java.io.IOException;
-import java.net.DatagramPacket;
-import java.net.DatagramSocket;
-import java.net.InetAddress;
-import java.net.InetSocketAddress;
-import java.net.Socket;
-import java.net.SocketException;
-import java.net.SocketTimeoutException;
-import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
-
-import com.thingsstuff.touchpad.R;
-
-import android.app.Activity;
-import android.app.AlertDialog;
-import android.content.Context;
-import android.content.DialogInterface;
-import android.content.Intent;
-import android.content.SharedPreferences;
-import android.net.DhcpInfo;
-import android.net.wifi.WifiManager;
 import android.os.Bundle;
-import android.os.Handler;
-import android.preference.PreferenceManager;
-import android.text.InputType;
-import android.text.method.PasswordTransformationMethod;
-import android.util.Log;
-import android.view.ContextMenu;
-import android.view.ContextMenu.ContextMenuInfo;
-import android.view.KeyEvent;
 import android.view.Menu;
 import android.view.MenuItem;
-import android.view.MotionEvent;
-import android.view.SubMenu;
-import android.view.View;
-import android.view.View.OnTouchListener;
-import android.view.ViewConfiguration;
-import android.widget.ImageView;
-import android.widget.LinearLayout;
-import android.widget.ToggleButton;
 
 
 public class touchpad extends ActionBarActivity {
@@ -71,6 +34,9 @@ public class touchpad extends ActionBarActivity {
     protected float Sensitivity;
     protected int MultitouchMode;
     protected int Timeout;
+    protected boolean EnableScrollBar;
+    protected int ScrollBarWidth;
+    protected boolean EnableSystem;
 
     // State.
     protected Handler timer = new Handler();
@@ -78,9 +44,11 @@ public class touchpad extends ActionBarActivity {
     protected ImageView touchpad;
     protected View mousebuttons;
     protected View keyboard, modifiers;
+    protected View media, browser;
     protected ToggleButton[] button = { null, null };
+    protected ToggleButton key_shift, key_ctrl, key_alt;
 
-    public touchpad() {
+    public Touchpad() {
     }
 
     @Override
@@ -114,6 +82,23 @@ public class touchpad extends ActionBarActivity {
         button[1].setOnCheckedChangeListener(mButton1ToggleListener);
         button[1].setOnLongClickListener(mButton1ClickListener);
 
+
+        // Set media button events.
+        media = (LinearLayout) findViewById(R.id.media);
+
+        View playpause = media.findViewById(R.id.playpause);
+        playpause.setOnClickListener(new OnClickListener() {
+            public void onClick(View v) { sendKeyPress((short) KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE, (short) 0); }
+        });
+
+        View stop = media.findViewById(R.id.stop);
+        stop.setOnClickListener(new OnClickListener() {
+            public void onClick(View v) { sendKeyPress((short) KeyEvent.KEYCODE_MEDIA_STOP, (short) 0); }
+        });
+
+        // Set browser button events.
+        browser = (LinearLayout) findViewById(R.id.browser);
+
         // Set up preferences.
         PreferenceManager.setDefaultValues(this, R.xml.preferences, false);
 
@@ -135,13 +120,30 @@ public class touchpad extends ActionBarActivity {
         Sensitivity = (float) preferences.getInt("Sensitivity", 50) / 25.0f + 0.1f;
         try { MultitouchMode = Integer.parseInt(preferences.getString("MultitouchMode", "0")); } catch(NumberFormatException ex) { MultitouchMode = 0; }
         Timeout = preferences.getInt("Timeout", 500) + 1;
-
+        EnableScrollBar = preferences.getBoolean("EnableScrollBar", preferences.getBoolean("EnableScroll", true));
+        ScrollBarWidth = preferences.getInt("ScrollBarWidth", 20);
+        EnableSystem = preferences.getBoolean("EnableSystem", true);
 
         boolean EnableMouseButtons = preferences.getBoolean("EnableMouseButtons", false);
+        boolean EnableModifiers = preferences.getBoolean("EnableModifiers", false);
+        int Toolbar = 0;
+        try { Toolbar = Integer.parseInt(preferences.getString("Toolbar", "0")); } catch(NumberFormatException ex) { }
 
         // Show/hide the mouse buttons.
         if(EnableMouseButtons) mousebuttons.setVisibility(View.VISIBLE);
         else mousebuttons.setVisibility(View.GONE);
+
+        // Show/hide the modifier keys.
+        if(EnableModifiers) modifiers.setVisibility(View.VISIBLE);
+        else modifiers.setVisibility(View.GONE);
+
+        // Show/hide media toolbar.
+        if(Toolbar == 1) media.setVisibility(View.VISIBLE);
+        else media.setVisibility(View.GONE);
+
+        // Show/hide browser toolbar.
+        if(Toolbar == 2) browser.setVisibility(View.VISIBLE);
+        else browser.setVisibility(View.GONE);
 
         timer.postDelayed(mKeepAliveListener, KeepAlive);
     }
