@@ -1,5 +1,7 @@
 package com.example.sari.touchpad;
 
+import com.example.sari.touchpad.R;
+
 import android.os.Bundle;
 import android.preference.PreferenceActivity;
 import android.preference.PreferenceManager;

@@ -50,7 +50,7 @@ import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ToggleButton;
 
-public class touchpad extends ActionBarActivity {
+public class touchpad extends Activity {
     static final private String LOG_TAG = "touchpad";
 
     static final private int CANCEL_ID = Menu.FIRST;
@@ -78,6 +78,9 @@ public class touchpad extends ActionBarActivity {
     protected float Sensitivity;
     protected int MultitouchMode;
     protected int Timeout;
+    protected boolean EnableScrollBar;
+    protected int ScrollBarWidth;
+    protected boolean EnableSystem;
 
 
     // State.
@@ -94,8 +97,10 @@ public class touchpad extends ActionBarActivity {
     }
 
     @Override
-    protected void onCreate(Bundle savedInstanceState) {
+    public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        //Inflate UI from XML nya
         setContentView(R.layout.activity_touchpad);
 
         // Set touchpad events.
@@ -138,11 +143,8 @@ public class touchpad extends ActionBarActivity {
         // Restore settings.
         SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(this);
 
-        try {
-            Port = (short) Integer.parseInt(preferences.getString("Port", Integer.toString(DefaultPort)));
-        } catch (NumberFormatException ex) {
-            Port = DefaultPort;
-        }
+        try { Port = (short) Integer.parseInt(preferences.getString("Port", Integer.toString(DefaultPort)));
+        } catch (NumberFormatException ex) {Port = DefaultPort;}
         Sensitivity = (float) preferences.getInt("Sensitivity", 50) / 25.0f + 0.1f;
         try {
             MultitouchMode = Integer.parseInt(preferences.getString("MultitouchMode", "0"));
@@ -150,32 +152,12 @@ public class touchpad extends ActionBarActivity {
             MultitouchMode = 0;
         }
         Timeout = preferences.getInt("Timeout", 500) + 1;
-
+        EnableScrollBar = preferences.getBoolean("EnableScrollBar", preferences.getBoolean("EnableScroll", true));
+        ScrollBarWidth = preferences.getInt("ScrollBarWidth", 20);
         EnableSystem = preferences.getBoolean("EnableSystem", true);
 
         boolean EnableMouseButtons = preferences.getBoolean("EnableMouseButtons", false);
-        boolean EnableModifiers = preferences.getBoolean("EnableModifiers", false);
-        int Toolbar = 0;
-        try {
-            Toolbar = Integer.parseInt(preferences.getString("Toolbar", "0"));
-        } catch (NumberFormatException ex) {
-        }
 
-        // Show/hide the mouse buttons.
-        if (EnableMouseButtons) mousebuttons.setVisibility(View.VISIBLE);
-        else mousebuttons.setVisibility(View.GONE);
-
-        // Show/hide the modifier keys.
-        if (EnableModifiers) modifiers.setVisibility(View.VISIBLE);
-        else modifiers.setVisibility(View.GONE);
-
-        // Show/hide media toolbar.
-        if (Toolbar == 1) media.setVisibility(View.VISIBLE);
-        else media.setVisibility(View.GONE);
-
-        // Show/hide browser toolbar.
-        if (Toolbar == 2) browser.setVisibility(View.VISIBLE);
-        else browser.setVisibility(View.GONE);
 
         timer.postDelayed(mKeepAliveListener, KeepAlive);
     }
@@ -352,9 +334,10 @@ public class touchpad extends ActionBarActivity {
                         }
                     }
 
-                    // Jika action masih null, periksa apakah berupa scroll action.
-                    if (action == null && EnableScrollBar && ((e.getEdgeFlags() & MotionEvent.EDGE_RIGHT) != 0 || e.getX() > v.getWidth() - ScrollBarWidth))
-                        action = new ScrollAction();
+                    // If the action is still null, check if it is a scroll action.
+				if(action == null && EnableScrollBar && ((e.getEdgeFlags() & MotionEvent.EDGE_RIGHT) != 0 || e.getX() > v.getWidth() - ScrollBarWidth))
+					action = new ScrollAction();
+
 
                     // jika masih null, berarti berupa plain move action.
                     if (action == null)
@@ -393,6 +376,13 @@ public class touchpad extends ActionBarActivity {
             return true;
         }
     };
+
+    OnCheckedChangeListener mButton1ToggleListener = new OnCheckedChangeListener() {
+        public void onCheckedChanged(CompoundButton cb, boolean on) {
+            if (on) sendDown(1);
+            else sendUp(1);
+        }
+    };
     OnLongClickListener mButton1ClickListener = new OnLongClickListener() {
         public boolean onLongClick(View arg0) {
             if (button[1].isChecked())
@@ -429,33 +419,6 @@ public class touchpad extends ActionBarActivity {
         }
     };
 
-    //Keyboard events
-    boolean ignoreKeyEvent(KeyEvent event) {
-        if (event.isSystem() && !EnableSystem)
-            return true;
-
-        // Tidak menangani button menu atau home.
-        switch (event.getKeyCode()) {
-            case KeyEvent.KEYCODE_MENU:
-            case KeyEvent.KEYCODE_HOME:
-            case KeyEvent.KEYCODE_POWER:
-                return true;
-        }
-        return false;
-    }
-
-    @Override
-    public boolean onKeyDown(int keyCode, KeyEvent event) {
-        if (ignoreKeyEvent(event))
-            return super.onKeyDown(keyCode, event);
-
-        int c = event.getUnicodeChar();
-        if (c == 0 || Character.isISOControl(c) || key_shift.isChecked() || key_ctrl.isChecked() || key_alt.isChecked())
-            sendKeyPress((short) event.getKeyCode(), (short) event.getMetaState());
-        else
-            sendChar((char) c);
-        return true;
-    }
 
     @Override
     public boolean onKeyMultiple(int keyCode, int repeatCount, KeyEvent event) {
@@ -470,15 +433,8 @@ public class touchpad extends ActionBarActivity {
         return true;
     }
 
-    @Override
-    public boolean onKeyUp(int keyCode, KeyEvent event) {
-        if (ignoreKeyEvent(event))
-            return super.onKeyUp(keyCode, event);
 
-        return true;
-    }
-
-    // Connection management.
+    // Pengaturan Koneksi
     protected boolean isConnected() {
         reconnect();
         return server != null;
@@ -848,17 +804,7 @@ public class touchpad extends ActionBarActivity {
         sendPacket(buffer);
     }
 
-    protected void sendKeyPress(short code, short flags) {
-        sendKey((byte) 0x21, code, flags);
-    }
 
-    protected void sendKeyDown(short code, short flags) {
-        sendKey((byte) 0x22, code, flags);
-    }
-
-    protected void sendKeyUp(short code, short flags) {
-        sendKey((byte) 0x23, code, flags);
-    }
 
     protected void sendChar(char code) {
         byte[] buffer = new byte[5];
@@ -902,7 +848,7 @@ public class touchpad extends ActionBarActivity {
         sendPacket(buffer, false, false);
     }
 
-    // Keep alive packet.sa
+    // Keep alive packet
     protected int nullCount = 0;
 
     protected void sendNull() {
