@@ -215,4 +215,58 @@ void Server::HandlePackets()
 	}
 }
 
+void Server::AcceptClients()
+{
+	TcpSocket c;
+	Address from;
+	if(c.Accept(server, from, false))
+	{
+		std::wstring name = c.GetPeer().ToString(false);
+
+		// Check password.
+		Packet p;
+		if(c.Receive(&p, sizeof(p), 1000) == sizeof(p) && (p.Control == C_CONNECT || p.Control == C_RESUME))
+		{
+			if(password == 0 || password == ntohl(p.Password))
+			{
+				// Check if a client is being booted by the new client.
+				if(client.IsValid())
+				{
+					std::wstring name = client.GetPeer().ToString(false);
+
+					client.Close();
+					if(p.Control != C_RESUME)
+						Log(OL_INFO, L"Replacing client %s\r\n", name.c_str());
+				}
+
+				if(p.Control == C_CONNECT)
+					Log(OL_NOTIFY | OL_INFO, L"Client connected from %s\r\n", name.c_str());
+				else
+					Log(OL_INFO, L"Client resumed\r\n");
+				p.Control = C_CONNECT;
+				c.Send(&p, sizeof(p));
+
+				client.Take(c);
+			}
+			else
+			{
+				p.Control = C_DISCONNECT;
+				p.Reason = 1;
+				Log(OL_INFO, L"Rejected client %s: Bad password\r\n", name.c_str());
+			}
+		}
+		else
+		{
+			p.Control = C_DISCONNECT;
+			p.Reason = 0;
+			Log(OL_INFO, L"Client failed to connect from %s\r\n", name.c_str());
+		}
+		if(p.Control == C_DISCONNECT)
+		{
+			c.Send(&p, sizeof(p));
+			c.Close();
+		}
+	}
+}
+
 
