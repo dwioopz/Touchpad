@@ -141,4 +141,78 @@ INPUT CharUp(WORD ch)
 	return in;
 }
 
+void Server::HandlePackets()
+{
+	Packet p;
+	if(client.Receive(&p, sizeof(p), 10) == sizeof(p))
+	{		
+		std::vector < INPUT > input;
+		switch(p.Control)
+		{
+		case C_MOUSE_MOVE:		
+			Log(OL_VERBOSE, L"MOUSE_MOVE %i %i\r\n", (int)p.Delta2D.dx, (int)p.Delta2D.dy);
+			input.push_back(MouseMove(p.Delta2D.dx, p.Delta2D.dy));
+			break;
+		case C_MOUSE_BUTTONDOWN:
+			Log(OL_VERBOSE, L"MOUSE_BUTTONDOWN %i\r\n", (int)p.Button);
+			input.push_back(MouseButtonDown(p.Button));
+			break;
+		case C_MOUSE_BUTTONUP:
+			Log(OL_VERBOSE, L"MOUSE_BUTTONUP %i\r\n", (int)p.Button);
+			input.push_back(MouseButtonUp(p.Button));
+			break;
+		case C_MOUSE_SCROLL:
+			Log(OL_VERBOSE, L"MOUSE_SCROLL %i\r\n", (int)p.Delta);
+			input.push_back(MouseWheel(p.Delta));
+			break;
+		case C_MOUSE_SCROLL2:
+			Log(OL_VERBOSE, L"MOUSE_SCROLL2 %i %i\r\n", (int)p.Delta2D.dx, (int)p.Delta2D.dy);
+			if(p.Delta2D.dx != 0)
+				input.push_back(MouseHWheel(p.Delta2D.dx));
+			if(p.Delta2D.dy != 0)
+				input.push_back(MouseWheel(p.Delta2D.dy));
+			break;
+		
+		case C_CHAR:
+			Log(OL_VERBOSE, L"CHAR %c\r\n", ntohs(p.Char));
+			input.push_back(CharDown(ntohs(p.Char)));
+			input.push_back(CharUp(ntohs(p.Char)));
+			break;
+		case C_KEYPRESS:	
+			Log(OL_VERBOSE, L"KEYPRESS %i 0x%x\r\n", (int)ntohs(p.Key.keycode), (int)ntohs(p.Key.meta));
+			input.push_back(KeyDown(MapKeycode((ANDROID_KEYCODE)ntohs(p.Key.keycode))));
+			input.push_back(KeyUp(MapKeycode((ANDROID_KEYCODE)ntohs(p.Key.keycode))));
+			break;
+		case C_KEYDOWN:	
+			Log(OL_VERBOSE, L"KEYDOWN %i 0x%x\r\n", (int)ntohs(p.Key.keycode), (int)ntohs(p.Key.meta));
+			input.push_back(KeyDown(MapKeycode((ANDROID_KEYCODE)ntohs(p.Key.keycode))));
+			break;
+		case C_KEYUP:
+			Log(OL_VERBOSE, L"KEYUP %i 0x%x\r\n", (int)ntohs(p.Key.keycode), (int)ntohs(p.Key.meta));
+			input.push_back(KeyUp(MapKeycode((ANDROID_KEYCODE)ntohs(p.Key.keycode))));
+			break;
+
+		case C_NULL:
+			Log(OL_VERBOSE, L"NULL %i\r\n", ntohl(p.Count));
+			break;
+		
+		case C_DISCONNECT:
+			Log(OL_VERBOSE, L"DISCONNECT\r\n");
+			client.Close();
+			Log(OL_NOTIFY | OL_INFO, L"Client disconnected\r\n");
+			break;
+		case C_SUSPEND:
+			Log(OL_VERBOSE, L"SUSPEND\r\n");
+			client.Close();
+			Log(OL_INFO, L"Client suspended\r\n");
+			break;
+		default:
+			Log(OL_VERBOSE, L"UNKNOWN\r\n");
+			break;
+		}
+		if(!input.empty() && SendInput(input.size(), &input[0], sizeof(input[0])) != input.size())
+			Log(OL_ERROR, L"SendInput Failed!\r\n");
+	}
+}
+
 
